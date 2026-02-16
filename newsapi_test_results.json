@@ -1,0 +1,42 @@
+{
+  "top_headlines_us": {
+    "success": true,
+    "count": 37,
+    "error": null
+  },
+  "top_headlines_gb": {
+    "success": true,
+    "count": 0,
+    "error": null
+  },
+  "top_headlines_sports": {
+    "success": true,
+    "count": 38,
+    "error": null
+  },
+  "everything_football": {
+    "success": true,
+    "count": 28369,
+    "error": null
+  },
+  "everything_premier": {
+    "success": true,
+    "count": 9390,
+    "error": null
+  },
+  "everything_recent": {
+    "success": true,
+    "count": 134,
+    "error": null
+  },
+  "sources": {
+    "success": true,
+    "count": 55,
+    "error": null
+  },
+  "sources_sports": {
+    "success": true,
+    "count": 11,
+    "error": null
+  }
+}

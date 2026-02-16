@@ -1,0 +1,267 @@
+"""
+NEWSAPI.ORG - FREE TIER ACCESS TESTER
+Tests exactly what you have access to with your API key
+"""
+
+import requests
+import json
+from datetime import datetime, timedelta
+import time
+
+# ==================== YOUR API KEY ====================
+API_KEY = "e8a981afc6ca49399c4088f951a6318e"  # Replace with your actual key
+BASE_URL = "https://newsapi.org/v2"
+
+# ==================== TEST FUNCTIONS ====================
+
+def test_endpoint(name, url, params=None):
+    """Test a single endpoint and return results"""
+    if params is None:
+        params = {}
+    
+    params['apiKey'] = API_KEY
+    
+    print(f"\n📡 Testing: {name}")
+    print(f"🔗 URL: {url}")
+    print(f"📋 Params: {params}")
+    
+    try:
+        start = time.time()
+        response = requests.get(url, params=params, timeout=10)
+        elapsed = round((time.time() - start) * 1000)
+        
+        data = response.json()
+        status = data.get('status', 'error')
+        
+        print(f"📊 Status Code: {response.status_code}")
+        print(f"⏱️  Response Time: {elapsed}ms")
+        print(f"📦 API Status: {status}")
+        
+        if response.status_code == 200 and status == 'ok':
+            total = data.get('totalResults', 0)
+            articles = data.get('articles', [])
+            sources = data.get('sources', [])
+            
+            if articles:
+                print(f"✅ SUCCESS! Found {total} articles")
+                print(f"📰 First article: {articles[0].get('title', 'N/A')[:100]}...")
+                return {"success": True, "count": total, "data": articles[:2]}
+            elif sources:
+                print(f"✅ SUCCESS! Found {len(sources)} sources")
+                print(f"📰 First source: {sources[0].get('name', 'N/A')}")
+                return {"success": True, "count": len(sources), "data": sources[:2]}
+            else:
+                print(f"✅ SUCCESS! (No articles)")
+                return {"success": True, "count": 0}
+        
+        elif response.status_code == 401:
+            print("❌ UNAUTHORIZED - Invalid API key")
+            return {"success": False, "error": "Invalid API key"}
+        elif response.status_code == 429:
+            print("❌ RATE LIMITED - Too many requests")
+            return {"success": False, "error": "Rate limited"}
+        elif response.status_code == 400:
+            print(f"❌ BAD REQUEST - {data.get('message', 'Unknown error')}")
+            return {"success": False, "error": data.get('message', 'Bad request')}
+        else:
+            print(f"❌ ERROR {response.status_code}: {data.get('message', 'Unknown')}")
+            return {"success": False, "error": data.get('message', 'Unknown')}
+            
+    except requests.exceptions.ConnectionError:
+        print("❌ CONNECTION FAILED - Check internet")
+        return {"success": False, "error": "Connection failed"}
+    except Exception as e:
+        print(f"❌ EXCEPTION: {str(e)}")
+        return {"success": False, "error": str(e)}
+
+# ==================== RUN ALL TESTS ====================
+
+def test_all_endpoints():
+    """Test all NewsAPI endpoints to see what works"""
+    
+    print("=" * 80)
+    print("📰 NEWSAPI.ORG - FREE TIER ACCESS TESTER")
+    print("=" * 80)
+    print(f"🔑 API Key: {API_KEY[:8]}...{API_KEY[-8:] if len(API_KEY) > 16 else 'INVALID'}")
+    print(f"📅 Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print("=" * 80)
+    
+    results = {}
+    
+    # ============ TEST 1: TOP HEADLINES (US) ============
+    results['top_headlines_us'] = test_endpoint(
+        "Top Headlines - US",
+        f"{BASE_URL}/top-headlines",
+        {"country": "us", "pageSize": 3}
+    )
+    
+    # ============ TEST 2: TOP HEADLINES (UK) ============
+    results['top_headlines_gb'] = test_endpoint(
+        "Top Headlines - UK",
+        f"{BASE_URL}/top-headlines",
+        {"country": "gb", "pageSize": 3}
+    )
+    
+    # ============ TEST 3: TOP HEADLINES (FOOTBALL CATEGORY) ============
+    results['top_headlines_sports'] = test_endpoint(
+        "Top Headlines - Sports",
+        f"{BASE_URL}/top-headlines",
+        {"country": "us", "category": "sports", "pageSize": 3}
+    )
+    
+    # ============ TEST 4: EVERYTHING - FOOTBALL SEARCH ============
+    results['everything_football'] = test_endpoint(
+        "Everything - Football",
+        f"{BASE_URL}/everything",
+        {"q": "football OR soccer", "language": "en", "pageSize": 3, "sortBy": "publishedAt"}
+    )
+    
+    # ============ TEST 5: EVERYTHING - PREMIER LEAGUE ============
+    results['everything_premier'] = test_endpoint(
+        "Everything - Premier League",
+        f"{BASE_URL}/everything",
+        {"q": "Premier League", "language": "en", "pageSize": 3}
+    )
+    
+    # ============ TEST 6: EVERYTHING - RECENT (LAST 24H) ============
+    yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
+    results['everything_recent'] = test_endpoint(
+        "Everything - Last 24h",
+        f"{BASE_URL}/everything",
+        {"q": "football", "from": yesterday, "pageSize": 3}
+    )
+    
+    # ============ TEST 7: SOURCES ============
+    results['sources'] = test_endpoint(
+        "Available Sources",
+        f"{BASE_URL}/top-headlines/sources",
+        {"language": "en", "country": "us"}
+    )
+    
+    # ============ TEST 8: SOURCES - SPORTS CATEGORY ============
+    results['sources_sports'] = test_endpoint(
+        "Sports Sources",
+        f"{BASE_URL}/top-headlines/sources",
+        {"category": "sports", "language": "en"}
+    )
+    
+    # ============ SUMMARY ============
+    print("\n" + "=" * 80)
+    print("📊 ACCESS SUMMARY")
+    print("=" * 80)
+    
+    working = []
+    failing = []
+    
+    for name, result in results.items():
+        if result.get('success'):
+            working.append(name)
+        else:
+            failing.append(name)
+    
+    print(f"\n✅ WORKING ENDPOINTS ({len(working)}):")
+    for w in working:
+        print(f"   • {w}")
+    
+    print(f"\n❌ FAILING ENDPOINTS ({len(failing)}):")
+    for f in failing:
+        print(f"   • {f}")
+    
+    # ============ RECOMMENDATIONS ============
+    print("\n" + "=" * 80)
+    print("🎯 RECOMMENDATIONS FOR YOUR FOOTBALL DASHBOARD")
+    print("=" * 80)
+    
+    if results.get('top_headlines_sports', {}).get('success'):
+        print("\n✅ USE: Top Headlines - Sports")
+        print("   • Great for live football news ticker")
+        print("   • Example: /v2/top-headlines?category=sports&country=us")
+    
+    if results.get('everything_football', {}).get('success'):
+        print("\n✅ USE: Everything - Football Search")
+        print("   • Perfect for specific team/news searches")
+        print("   • Example: /v2/everything?q=Manchester+United")
+    
+    if results.get('sources_sports', {}).get('success'):
+        print("\n✅ USE: Sports Sources")
+        print("   • Get list of sports news sources")
+        print("   • Filter by: /v2/top-headlines?sources=bbc-sport")
+    
+    # ============ FREE TIER WARNINGS ============
+    print("\n" + "=" * 80)
+    print("⚠️  FREE TIER LIMITATIONS")
+    print("=" * 80)
+    print("• 100 requests per day TOTAL (all endpoints combined)")
+    print("• No access to articles older than 1 month")
+    print("• Cannot search across all sources without query")
+    print("• Commercial use requires paid plan")
+    print("\n💡 TIPS:")
+    print("• Cache results to save requests")
+    print("• Use '/top-headlines' for live updates (cheaper)")
+    print("• Use '/everything' sparingly for searches")
+    print("=" * 80)
+    
+    return results
+
+# ==================== FOOTBALL-SPECIFIC TESTS ====================
+
+def test_football_specific():
+    """Test football-related queries specifically"""
+    
+    print("\n" + "=" * 80)
+    print("⚽ FOOTBALL-SPECIFIC TESTS")
+    print("=" * 80)
+    
+    football_queries = [
+        {"name": "Premier League", "q": "Premier League"},
+        {"name": "Champions League", "q": "UEFA Champions League"},
+        {"name": "Transfer News", "q": "football transfer"},
+        {"name": "Liverpool FC", "q": "Liverpool FC"},
+        {"name": "Manchester United", "q": "Manchester United"},
+        {"name": "Real Madrid", "q": "Real Madrid"},
+    ]
+    
+    for query in football_queries:
+        print(f"\n🔍 Testing: {query['name']}")
+        result = test_endpoint(
+            query['name'],
+            f"{BASE_URL}/everything",
+            {"q": query['q'], "language": "en", "pageSize": 1, "sortBy": "relevancy"}
+        )
+        
+        if result.get('success'):
+            print(f"✅ Can search for {query['name']} news")
+        else:
+            print(f"❌ Cannot search {query['name']}")
+
+# ==================== MAIN ====================
+
+if __name__ == "__main__":
+    # Replace with your actual API key
+    API_KEY = input("Enter your NewsAPI.org API key: ").strip()
+    
+    if not API_KEY:
+        print("❌ No API key provided")
+        exit()
+    
+    # Test all endpoints
+    results = test_all_endpoints()
+    
+    # Test football-specific queries
+    test_football_specific()
+    
+    # Save results to file
+    with open('newsapi_test_results.json', 'w') as f:
+        # Convert any non-serializable objects
+        serializable_results = {}
+        for k, v in results.items():
+            if isinstance(v, dict):
+                serializable_results[k] = {
+                    'success': v.get('success'),
+                    'count': v.get('count'),
+                    'error': v.get('error')
+                }
+        
+        json.dump(serializable_results, f, indent=2)
+    
+    print(f"\n📁 Results saved to: newsapi_test_results.json")
